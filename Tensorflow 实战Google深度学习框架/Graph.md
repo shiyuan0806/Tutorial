@@ -14,5 +14,6 @@ print default_const
 - 默认构建图，并构建图中构造常量default_const
 
 ```
-'Tensor("Const:0", shape=(), dtype=float32)'
-'''
+Tensor("Const:0", shape=(), dtype=float32)
+
+```
