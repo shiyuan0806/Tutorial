@@ -160,6 +160,246 @@ Tensor("const_in_new_graph:0", shape=(), dtype=float32)
 ---
 
 
+## Tensorflow清除计算图
+
+- tf.reset_default_graph()重置计算图
+
+当在搭建网络查看计算图时，如果重复运行程序会导致重定义报错。为了可以在同一个线程或者交互式环境中（ipython/jupyter）重复调试计算图，就需要使用这个函数来重置计算图，随后修改计算图再次运行
+
+需要注意的是,下面三种情况使用这个函数会报错：
+
+```
+with graph.as_default():
+	#不能用
+with tf.Session(): block.
+	#不能用
+tf.InteractiveSession() 
+	#Your regions
+	#不能用
+sess.close()
+```
+
+- reset_default_graph 需要在with tf.session()外部调用
+
+---
+
+
+## Tensorflow图使用例
+
+### 默认图基本操作
+
+```
+#-*- coding: utf-8 -*-
+"""
+@author: shiyuan
+计算图的使用
+"""
+
+
+import tensorflow as tf
+
+a = tf.constant([1.,2.],name = "a")
+b = tf.constant([2.,3.],name = "b")
+result = a + b
+
+print (a)
+print (b)
+print (result)
+
+"""
+Tensor("a:0", shape=(2,), dtype=float32)
+Tensor("b:0", shape=(2,), dtype=float32)
+Tensor("add:0", shape=(2,), dtype=float32)
+"""
+
+default_graph = tf.get_default_graph()# 获得默认图
+print(a.graph)
+print(b.graph)
+print(result.graph)
+print(default_graph)#打印默认图信息
+
+"""
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+"""
+
+print(a.name) #a 变量名
+print(b.name) #b 变量名
+print(result.name) #result 变量名
+a_tensor = default_graph.get_tensor_by_name('a:0') #通过变量名获取张量
+b_tensor = default_graph.get_tensor_by_name('b:0') #通过变量名获取张量
+result_tensor = default_graph.get_tensor_by_name('add:0') #通过变量名获取张量
+print(a_tensor)#打印获取的张量
+print(b_tensor)#打印获取的张量
+print(result_tensor)#打印获取的张量
+
+"""
+a:0
+b:0
+add:0
+Tensor("a:0", shape=(2,), dtype=float32)
+Tensor("b:0", shape=(2,), dtype=float32)
+Tensor("add:0", shape=(2,), dtype=float32)
+"""
+
+a_op = default_graph.get_operation_by_name('a')
+b_op = default_graph.get_operation_by_name('b')
+result_op = default_graph.get_operation_by_name('add')
+print(a_op)
+print(b_op)
+print(result_op)
+
+"""
+name: "a"
+op: "Const"
+attr {
+  key: "dtype"
+  value {
+    type: DT_FLOAT
+  }
+}
+attr {
+  key: "value"
+  value {
+    tensor {
+      dtype: DT_FLOAT
+      tensor_shape {
+        dim {
+          size: 2
+        }
+      }
+      tensor_content: "\000\000\200?\000\000\000@"
+    }
+  }
+}
+
+name: "b"
+op: "Const"
+attr {
+  key: "dtype"
+  value {
+    type: DT_FLOAT
+  }
+}
+attr {
+  key: "value"
+  value {
+    tensor {
+      dtype: DT_FLOAT
+      tensor_shape {
+        dim {
+          size: 2
+        }
+      }
+      tensor_content: "\000\000\000@\000\000@@"
+    }
+  }
+}
+
+name: "add"
+op: "Add"
+input: "a"
+input: "b"
+attr {
+  key: "T"
+  value {
+    type: DT_FLOAT
+  }
+}
+
+"""
+
+ng = default_graph.get_operations()
+print(ng) 
+
+"""
+[<tf.Operation 'a' type=Const>, <tf.Operation 'b' type=Const>, <tf.Operation 'add' type=Add>]
+"""
+```
+
+```
+Tensor("a:0", shape=(2,), dtype=float32)
+Tensor("b:0", shape=(2,), dtype=float32)
+Tensor("add:0", shape=(2,), dtype=float32)
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
+a:0
+b:0
+add:0
+Tensor("a:0", shape=(2,), dtype=float32)
+Tensor("b:0", shape=(2,), dtype=float32)
+Tensor("add:0", shape=(2,), dtype=float32)
+name: "a"
+op: "Const"
+attr {
+  key: "dtype"
+  value {
+    type: DT_FLOAT
+  }
+}
+attr {
+  key: "value"
+  value {
+    tensor {
+      dtype: DT_FLOAT
+      tensor_shape {
+        dim {
+          size: 2
+        }
+      }
+      tensor_content: "\000\000\200?\000\000\000@"
+    }
+  }
+}
+
+name: "b"
+op: "Const"
+attr {
+  key: "dtype"
+  value {
+    type: DT_FLOAT
+  }
+}
+attr {
+  key: "value"
+  value {
+    tensor {
+      dtype: DT_FLOAT
+      tensor_shape {
+        dim {
+          size: 2
+        }
+      }
+      tensor_content: "\000\000\000@\000\000@@"
+    }
+  }
+}
+
+name: "add"
+op: "Add"
+input: "a"
+input: "b"
+attr {
+  key: "T"
+  value {
+    type: DT_FLOAT
+  }
+}
+
+[<tf.Operation 'a' type=Const>, <tf.Operation 'b' type=Const>, <tf.Operation 'add' type=Add>]
+```
+
+---
+
+
+
+
+
+
 
 
 
