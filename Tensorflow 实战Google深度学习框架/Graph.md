@@ -318,23 +318,57 @@ print(ng)
 [<tf.Operation 'a' type=Const>, <tf.Operation 'b' type=Const>, <tf.Operation 'add' type=Add>]
 """
 ```
+---
+
+
+### 构建图基本操作
 
 ```
-Tensor("a:0", shape=(2,), dtype=float32)
-Tensor("b:0", shape=(2,), dtype=float32)
-Tensor("add:0", shape=(2,), dtype=float32)
-<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
-<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
-<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
-<tensorflow.python.framework.ops.Graph object at 0x7f5e840ab110>
-a:0
-b:0
-add:0
-Tensor("a:0", shape=(2,), dtype=float32)
-Tensor("b:0", shape=(2,), dtype=float32)
-Tensor("add:0", shape=(2,), dtype=float32)
-name: "a"
-op: "Const"
+#-*- coding: utf-8 -*-
+"""
+@author: shiyuan
+计算图的使用
+"""
+
+import tensorflow as tf
+
+g1 = tf.Graph()
+with g1.as_default():
+    v = tf.get_variable("v",shape=[1],initializer = tf.zeros_initializer())
+print (tf.get_default_graph())
+print (g1)
+print (v.graph)
+print (v)
+print (v.name)
+v_tensor1 = g1.get_tensor_by_name('v:0') #通过变量名获取张量
+print(v_tensor1)#打印获取的张量
+v_op1 = g1.get_operation_by_name('v')
+print(v_op1)#打印获取的张量
+ng1 = g1.get_operations()
+print(ng1)
+"""
+<tensorflow.python.framework.ops.Graph object at 0x7f688316c190>
+<tensorflow.python.framework.ops.Graph object at 0x7f68f8fc3ad0>
+<tensorflow.python.framework.ops.Graph object at 0x7f68f8fc3ad0>
+<tf.Variable 'v:0' shape=(1,) dtype=float32_ref>
+v:0
+Tensor("v:0", shape=(1,), dtype=float32_ref)
+name: "v"
+op: "VariableV2"
+attr {
+  key: "_class"
+  value {
+    list {
+      s: "loc:@v"
+    }
+  }
+}
+attr {
+  key: "container"
+  value {
+    s: ""
+  }
+}
 attr {
   key: "dtype"
   value {
@@ -342,22 +376,64 @@ attr {
   }
 }
 attr {
-  key: "value"
+  key: "shape"
   value {
-    tensor {
-      dtype: DT_FLOAT
-      tensor_shape {
-        dim {
-          size: 2
-        }
+    shape {
+      dim {
+        size: 1
       }
-      tensor_content: "\000\000\200?\000\000\000@"
     }
   }
 }
+attr {
+  key: "shared_name"
+  value {
+    s: ""
+  }
+}
 
-name: "b"
-op: "Const"
+[<tf.Operation 'v/Initializer/zeros' type=Const>, <tf.Operation 'v' type=VariableV2>, <tf.Operation 'v/Assign' type=Assign>, <tf.Operation 'v/read' type=Identity>]
+"""
+
+
+g2 = tf.Graph()
+with g2.as_default():
+    v = tf.get_variable("v",shape=[1],initializer = tf.ones_initializer())
+print (tf.get_default_graph())
+print (g2)
+print (v.graph)
+print (v)
+print (v.name)
+v_tensor2 = g2.get_tensor_by_name('v:0') #通过变量名获取张量
+print(v_tensor2)#打印获取的张量
+v_op2 = g2.get_operation_by_name('v')
+print(v_op2)#打印获取的张量
+ng2 = g2.get_operations()
+print(ng2)
+
+"""
+<tensorflow.python.framework.ops.Graph object at 0x7f688316c190>
+<tensorflow.python.framework.ops.Graph object at 0x7f688316c590>
+<tensorflow.python.framework.ops.Graph object at 0x7f688316c590>
+<tf.Variable 'v:0' shape=(1,) dtype=float32_ref>
+v:0
+Tensor("v:0", shape=(1,), dtype=float32_ref)
+name: "v"
+op: "VariableV2"
+attr {
+  key: "_class"
+  value {
+    list {
+      s: "loc:@v"
+    }
+  }
+}
+attr {
+  key: "container"
+  value {
+    s: ""
+  }
+}
 attr {
   key: "dtype"
   value {
@@ -365,37 +441,55 @@ attr {
   }
 }
 attr {
-  key: "value"
+  key: "shape"
   value {
-    tensor {
-      dtype: DT_FLOAT
-      tensor_shape {
-        dim {
-          size: 2
-        }
+    shape {
+      dim {
+        size: 1
       }
-      tensor_content: "\000\000\000@\000\000@@"
     }
   }
 }
-
-name: "add"
-op: "Add"
-input: "a"
-input: "b"
 attr {
-  key: "T"
+  key: "shared_name"
   value {
-    type: DT_FLOAT
+    s: ""
   }
 }
+[<tf.Operation 'v/Initializer/ones' type=Const>, <tf.Operation 'v' type=VariableV2>, <tf.Operation 'v/Assign' type=Assign>, <tf.Operation 'v/read' type=Identity>]
+"""
 
-[<tf.Operation 'a' type=Const>, <tf.Operation 'b' type=Const>, <tf.Operation 'add' type=Add>]
+with tf.Session(graph = g1) as sess:
+     sess.run(tf.global_variables_initializer())
+     with tf.variable_scope("",reuse = True):
+        print(sess.run(tf.get_variable("v")))
+
+"""
+[0.]
+"""
+with tf.Session(graph = g2) as sess:
+     sess.run(tf.global_variables_initializer())
+     with tf.variable_scope("",reuse = True):
+        print(sess.run(tf.get_variable("v")))
+
+
+"""
+[0.]
+"""
+
 ```
 
 ---
 
 
+### 图指定设备
+
+```
+g=tf.Graph()
+# 指定计算运行的设备。
+with g.device('/gpu:0'):
+    result=a+b
+```
 
 
 
